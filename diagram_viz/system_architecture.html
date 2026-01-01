@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DR System Architecture</title>
+    <style>
+        :root {
+            --primary-color: #2196f3;
+            --success-color: #4caf50;
+            --dark-bg: #263238;
+            --light-bg: #f4f6f8;
+            --card-white: #ffffff;
+            --hidden-zone-bg: #eceff1;
+            --hidden-zone-border: #cfd8dc;
+        }
+
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--light-bg);
+            margin: 0;
+            padding: 40px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        h1 {
+            color: #37474f;
+            margin-bottom: 20px;
+            font-weight: 300;
+            text-align: center;
+            font-size: 2.2rem;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #78909c;
+            max-width: 600px;
+            margin-bottom: 50px;
+            line-height: 1.5;
+        }
+
+        .main-container {
+            display: flex;
+            flex-direction: column;
+            gap: 40px;
+            width: 100%;
+            max-width: 1200px;
+        }
+
+        /* --- FRONTEND SECTION --- */
+        .frontend-section {
+            display: flex;
+            justify-content: space-between;
+            align-items: stretch;
+            gap: 40px;
+            position: relative;
+            z-index: 10;
+        }
+
+        .fe-card {
+            background: var(--card-white);
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+            padding: 30px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            border-top: 6px solid var(--primary-color);
+            position: relative;
+        }
+
+        .fe-card.output {
+            border-top-color: var(--success-color);
+        }
+
+        .fe-icon {
+            font-size: 3rem;
+            margin-bottom: 20px;
+            background: #e3f2fd;
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .fe-card.output .fe-icon {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+
+        .fe-title {
+            font-size: 1.4rem;
+            color: #263238;
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+
+        .fe-details {
+            text-align: left;
+            width: 100%;
+            background: #fafafa;
+            padding: 15px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            color: #546e7a;
+            border: 1px solid #eee;
+        }
+
+        .fe-details ul {
+            margin: 0;
+            padding-left: 20px;
+        }
+
+        .fe-details li {
+            margin-bottom: 5px;
+        }
+
+        .user-label {
+            position: absolute;
+            top: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #2196f3;
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+
+        /* --- BACKEND SECTION --- */
+        .backend-container {
+            position: relative;
+            background: var(--hidden-zone-bg);
+            border: 2px dashed var(--hidden-zone-border);
+            border-radius: 16px;
+            padding: 50px 30px 30px 30px;
+            margin-top: 20px;
+        }
+
+        .backend-label {
+            position: absolute;
+            top: -18px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #546e7a;
+            color: white;
+            padding: 8px 24px;
+            border-radius: 4px;
+            font-weight: bold;
+            font-size: 0.9rem;
+            letter-spacing: 1px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .backend-label small {
+            font-weight: normal;
+            opacity: 0.8;
+            display: block;
+            text-align: center;
+            font-size: 0.75rem;
+        }
+
+        .process-flow {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: nowrap;
+        }
+
+        .process-step {
+            background: white;
+            padding: 15px 10px;
+            border-radius: 8px;
+            text-align: center;
+            width: 150px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+            position: relative;
+            opacity: 0.9;
+        }
+
+        .process-step h4 {
+            margin: 10px 0 5px 0;
+            font-size: 0.95rem;
+            color: #455a64;
+        }
+
+        .process-step p {
+            margin: 0;
+            font-size: 0.75rem;
+            color: #90a4ae;
+        }
+
+        .process-icon {
+            font-size: 1.5rem;
+            color: #607d8b;
+        }
+
+        /* Connectors */
+        .flow-arrow-right {
+            flex: 1;
+            height: 2px;
+            background: #cfd8dc;
+            position: relative;
+            margin: 0 5px;
+        }
+
+        .flow-arrow-right::after {
+            content: '►';
+            position: absolute;
+            right: -5px;
+            top: -8px;
+            color: #cfd8dc;
+            font-size: 14px;
+        }
+
+        /* Vertical Flow Lines */
+        .vertical-connect-down {
+            position: absolute;
+            left: 20%;
+            top: 100%;
+            /* Bottom of frontend card */
+            height: 80px;
+            /* Reach into backend */
+            width: 2px;
+            background: #b0bec5;
+            background-image: linear-gradient(to bottom, #b0bec5 50%, rgba(255, 255, 255, 0) 0%);
+            background-position: left;
+            background-size: 2px 10px;
+            background-repeat: repeat-y;
+            z-index: 0;
+        }
+
+        .vertical-connect-up {
+            position: absolute;
+            right: 20%;
+            bottom: 100%;
+            /* Top of backend container */
+            height: 80px;
+            width: 2px;
+            background: #81c784;
+            z-index: 0;
+        }
+
+        /* Arrow heads for vertical lines */
+        .v-arrow-head-down {
+            position: absolute;
+            left: -6px;
+            bottom: 0;
+            width: 0;
+            height: 0;
+            border-left: 7px solid transparent;
+            border-right: 7px solid transparent;
+            border-top: 10px solid #b0bec5;
+        }
+
+        .v-arrow-head-up {
+            position: absolute;
+            right: -6px;
+            top: -10px;
+            /* Adjust based on flow */
+            width: 0;
+            height: 0;
+            border-left: 7px solid transparent;
+            border-right: 7px solid transparent;
+            border-bottom: 10px solid #66bb6a;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>Diabetic Retinopathy Detection System</h1>
+    <p class="subtitle">Architectural Overview highlighting the User Interface and the underlying Hidden Processing
+        Pipeline.</p>
+
+    <div class="main-container">
+
+        <!-- Frontend Zone -->
+        <div class="frontend-section">
+
+            <!-- Upload Card -->
+            <div class="fe-card input">
+                <div class="user-label">USER INTERFACE</div>
+                <div class="fe-icon">📤</div>
+                <div class="fe-title">Upload Section</div>
+                <div class="fe-details">
+                    <strong>Input Handling:</strong>
+                    <ul>
+                        <li>Upload Retinal Image</li>
+                        <li>Browse from System</li>
+                        <li>Secure Transfer to Backend</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Dashboard Card -->
+            <div class="fe-card output">
+                <div class="user-label">USER REPORTS</div>
+                <div class="fe-icon">📊</div>
+                <div class="fe-title">Results Dashboard</div>
+                <div class="fe-details">
+                    <strong>Comprehensive Reports:</strong>
+                    <ul>
+                        <li>Severity Level Classification</li>
+                        <li>Risk & Probability Graphs</li>
+                        <li>Downloadable PDF Report</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Visualization of data flow -->
+            <div style="position: absolute; left: 25%; bottom: -62px; height: 62px; border-left: 2px dashed #90a4ae;">
+            </div>
+            <div style="position: absolute; left: 24.5%; bottom: -65px; color: #90a4ae;">▼</div>
+
+            <div style="position: absolute; right: 25%; bottom: -62px; height: 62px; border-left: 2px solid #4caf50;">
+            </div>
+            <div style="position: absolute; right: 24.5%; bottom: -15px; color: #4caf50;">▲</div>
+
+        </div>
+
+        <!-- Backend Zone -->
+        <div class="backend-container">
+            <div class="backend-label">
+                BACKEND PROCESSING
+                <small>(Hidden from User)</small>
+            </div>
+
+            <div class="process-flow">
+
+                <!-- Step 1 -->
+                <div class="process-step">
+                    <div class="process-icon">⚙️</div>
+                    <h4>Preprocessing</h4>
+                    <p>Resize, Norm,<br>Contrast</p>
+                </div>
+
+                <div class="flow-arrow-right"></div>
+
+                <!-- Step 1.5 GAN -->
+                <div class="process-step" style="border: 2px solid #ce93d8; background: #f3e5f5;">
+                    <div class="process-icon" style="color: #8e24aa;">🤖</div>
+                    <h4>GAN Augmentation</h4>
+                    <p>Synthetic Images<br>(Class Imbalance)</p>
+                </div>
+
+                <div class="flow-arrow-right"></div>
+
+                <!-- Step 2 -->
+                <div class="process-step">
+                    <div class="process-icon">🧠</div>
+                    <h4>Feature Extraction</h4>
+
+                    <p>VGG16 / VGG19</p>
+                </div>
+
+                <div class="flow-arrow-right"></div>
+
+                <!-- Step 3 -->
+                <div class="process-step">
+                    <div class="process-icon">🔢</div>
+                    <h4>Vectors</h4>
+                    <p>Feature Vector<br>Generation</p>
+                </div>
+
+                <div class="flow-arrow-right"></div>
+
+                <!-- Step 4 -->
+                <div class="process-step">
+                    <div class="process-icon">🚀</div>
+                    <h4>Classification</h4>
+                    <p>AdaBoost /<br>XGBoost</p>
+                </div>
+
+                <div class="flow-arrow-right"></div>
+
+                <!-- Step 5 -->
+                <div class="process-step">
+                    <div class="process-icon">📈</div>
+                    <h4>Prediction</h4>
+                    <p>Score & Risk<br>Calculation</p>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+
+</body>
+
+</html>

@@ -1,0 +1,10 @@
+# Datasets
+colored_images/
+*.csv
+datasets/
+
+# Python
+__pycache__/
+*.pyc
+venv/
+.env

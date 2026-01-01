@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Diabetic Retinopathy Detection Pipeline</title>
+    <style>
+        :root {
+            --primary-blue: #0288d1;
+            --primary-teal: #009688;
+            --primary-indigo: #3f51b5;
+            --primary-green: #43a047;
+            --bg-color: #f5f7fa;
+            --card-bg: #ffffff;
+            --text-main: #37474f;
+            --text-light: #78909c;
+        }
+
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            margin: 0;
+            padding: 40px;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        h1 {
+            text-align: center;
+            color: #263238;
+            margin-bottom: 60px;
+            font-weight: 300;
+            font-size: 2.5rem;
+        }
+
+        .pipeline-container {
+            display: flex;
+            flex-direction: row;
+            align-items: flex-start;
+            justify-content: center;
+            gap: 0;
+            flex-wrap: wrap; /* Allow wrapping if screen is small, though intended for wide view */
+            max-width: 100%;
+        }
+
+        .step-wrapper {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            width: 200px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            position: relative;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            border-top: 5px solid transparent;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+        }
+
+        .card-icon {
+            font-size: 2rem;
+            margin-bottom: 15px;
+            color: var(--text-main);
+            background: #eceff1;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .card-title {
+            font-weight: 600;
+            font-size: 1.1rem;
+            margin-bottom: 10px;
+            color: #37474f;
+        }
+
+        .card-desc {
+            font-size: 0.9rem;
+            color: var(--text-light);
+            line-height: 1.4;
+        }
+
+        .arrow {
+            width: 60px;
+            height: 2px;
+            background: #cfd8dc;
+            position: relative;
+            margin: 0 10px;
+        }
+
+        .arrow::after {
+            content: '';
+            position: absolute;
+            right: 0;
+            top: -5px;
+            width: 0;
+            height: 0;
+            border-left: 10px solid #cfd8dc;
+            border-top: 6px solid transparent;
+            border-bottom: 6px solid transparent;
+        }
+
+        /* Stage Styling */
+        .stage-input { border-color: var(--primary-blue); }
+        .stage-input .card-icon { color: var(--primary-blue); background: #e1f5fe; }
+        
+        .stage-preproc { border-color: var(--primary-blue); }
+        .stage-preproc .card-icon { color: var(--primary-blue); background: #e1f5fe; }
+
+        .stage-aug { border-color: var(--primary-teal); }
+        .stage-aug .card-icon { color: var(--primary-teal); background: #e0f2f1; }
+
+        .stage-extract { border-color: var(--primary-teal); }
+        .stage-extract .card-icon { color: var(--primary-teal); background: #e0f2f1; }
+        
+        .stage-vector { border-color: var(--primary-indigo); }
+        .stage-vector .card-icon { color: var(--primary-indigo); background: #e8eaf6; }
+
+        .stage-classify { border-color: var(--primary-indigo); }
+        .stage-classify .card-icon { color: var(--primary-indigo); background: #e8eaf6; }
+
+        .stage-output { border-color: var(--primary-green); }
+        .stage-output .card-icon { color: var(--primary-green); background: #e8f5e9; }
+        
+        .stage-predict { border-color: var(--primary-green); }
+        .stage-predict .card-icon { color: var(--primary-green); background: #e8f5e9; }
+
+        /* Labels for stages */
+        .card-label {
+            position: absolute;
+            top: -25px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 700;
+            color: #90a4ae;
+            white-space: nowrap;
+        }
+
+        @media (max-width: 1600px) {
+            .pipeline-container {
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+            .step-wrapper {
+                margin: 20px;
+            }
+            .arrow {
+                display: none; /* Hide arrows on wrap for cleaner look, or rotate */
+            }
+            /* Add down arrow for mobile view via CSS if needed, but keeping simple for now */
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Diabetic Retinopathy Detection Pipeline</h1>
+
+    <div class="pipeline-container">
+        
+        <!-- Step 1 -->
+        <div class="step-wrapper">
+            <div class="card stage-input">
+                <div class="card-icon">👁️</div>
+                <div class="card-title">Image Input</div>
+                <div class="card-desc">Retinal Fundus Images</div>
+            </div>
+            <div class="arrow"></div>
+        </div>
+
+        <!-- Step 2 -->
+        <div class="step-wrapper">
+            <div class="card stage-preproc">
+                <div class="card-icon">⚙️</div>
+                <div class="card-title">Preprocessing</div>
+                <div class="card-desc">Resize (224x224)<br>Normalization<br>Noise Removal</div>
+            </div>
+            <div class="arrow"></div>
+        </div>
+
+        <!-- Step 3 -->
+        <div class="step-wrapper">
+            <div class="card stage-aug">
+                <div class="card-icon">🤖</div>
+                <div class="card-title">GAN Augmentation</div>
+                <div class="card-desc">Synthetic Image Generation<br>(Class Balancing)</div>
+            </div>
+            <div class="arrow"></div>
+        </div>
+
+        <!-- Step 4 -->
+        <div class="step-wrapper">
+            <div class="card stage-extract">
+                <div class="card-icon">🧠</div>
+                <div class="card-title">Feature Extraction</div>
+                <div class="card-desc">VGG16 / VGG19<br>CNN Architecture</div>
+            </div>
+            <div class="arrow"></div>
+        </div>
+
+        <!-- Step 5 -->
+        <div class="step-wrapper">
+            <div class="card stage-vector">
+                <div class="card-icon">🔢</div>
+                <div class="card-title">Feature Vector</div>
+                <div class="card-desc">Flattened Vector Generation</div>
+            </div>
+            <div class="arrow"></div>
+        </div>
+
+        <!-- Step 6 -->
+        <div class="step-wrapper">
+            <div class="card stage-classify">
+                <div class="card-icon">🌲</div>
+                <div class="card-title">Boosting Classifier</div>
+                <div class="card-desc">AdaBoost / XGBoost<br>Ensemble Learning</div>
+            </div>
+            <div class="arrow"></div>
+        </div>
+
+        <!-- Step 7 -->
+        <div class="step-wrapper">
+            <div class="card stage-output">
+                <div class="card-label">Detection</div>
+                <div class="card-icon">📊</div>
+                <div class="card-title">Classification</div>
+                <div class="card-desc">
+                    <ul style="padding-left: 0; list-style: none; margin: 0; font-size: 0.8rem;">
+                        <li>No DR</li>
+                        <li>Mild</li>
+                        <li>Moderate</li>
+                        <li>Severe</li>
+                        <li>Proliferative</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="arrow"></div>
+        </div>
+
+        <!-- Step 8 -->
+        <div class="step-wrapper">
+            <div class="card stage-predict">
+                <div class="card-label">Prediction</div>
+                <div class="card-icon">📈</div>
+                <div class="card-title">Risk Prediction</div>
+                <div class="card-desc">Disease Progression<br>& Future Risk Levels</div>
+            </div>
+        </div>
+
+    </div>
+
+</body>
+</html>
