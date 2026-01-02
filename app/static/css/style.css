@@ -508,3 +508,47 @@ body {
         grid-column: 1 / -1;
     }
 }
+/* Add to your existing CSS */
+@media print {
+  .navbar, .actions-row, .nav-links, .user-profile, 
+  .info-badges, .page-header p, .upload-container,
+  #loadingSection, #historySection {
+    display: none !important;
+  }
+  
+  .container {
+    padding: 0 !important;
+    margin: 0 !important;
+    max-width: 100% !important;
+  }
+  
+  .dashboard-grid {
+    display: block !important;
+  }
+  
+  .card {
+    break-inside: avoid;
+    box-shadow: none !important;
+    border: 1px solid #ddd !important;
+    margin-bottom: 20px !important;
+  }
+  
+  .diagnosis-large {
+    font-size: 28px !important;
+  }
+  
+  canvas {
+    max-height: 200px !important;
+  }
+}
+
+/* Print-only elements */
+.print-only {
+  display: none;
+}
+
+@media print {
+  .print-only {
+    display: block !important;
+  }
+}
