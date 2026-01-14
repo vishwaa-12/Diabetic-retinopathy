@@ -1,358 +1,401 @@
 document.addEventListener("DOMContentLoaded", () => {
-  const dropZone = document.getElementById("dropZone");
-  const fileInput = document.getElementById("fileInput");
-  const uploadSection = document.getElementById("uploadSection");
-  const loadingSection = document.getElementById("loadingSection");
-  const dashboardSection = document.getElementById("dashboardSection");
-  const historySection = document.getElementById("historySection");
+    const dropZone = document.getElementById("dropZone");
+    const fileInput = document.getElementById("fileInput");
+    const uploadSection = document.getElementById("uploadSection");
+    const loadingSection = document.getElementById("loadingSection");
+    const dashboardSection = document.getElementById("dashboardSection");
+    const historySection = document.getElementById("historySection");
 
-  // Elements to update
-  const diagnosisText = document.getElementById("diagnosisText");
-  const riskScore = document.getElementById("riskScore");
-  const meterFill = document.getElementById("confidenceFill");
-  const previewImage = document.getElementById("previewImage");
-  const recommendationText = document.getElementById("recommendationText");
+    // Elements to update
+    const diagnosisText = document.getElementById("diagnosisText");
+    const riskScore = document.getElementById("riskScore");
+    const meterFill = document.getElementById("confidenceFill");
+    const previewImage = document.getElementById("previewImage");
+    const recommendationText = document.getElementById("recommendationText");
 
-  // Store current analysis result globally for print preview
-  window.currentAnalysisResult = null;
-  window.currentPatientData = null;
+    // Store current analysis result globally for print preview
+    window.currentAnalysisResult = null;
+    window.currentPatientData = null;
 
-  // Drag & Drop Handlers
-  dropZone.addEventListener("click", () => fileInput.click());
+    // Drag & Drop Handlers
+    dropZone.addEventListener("click", () => fileInput.click());
 
-  dropZone.addEventListener("dragover", (e) => {
-    e.preventDefault();
-    dropZone.style.borderColor = "#009688";
-    dropZone.style.background = "#e0f2f1";
-  });
-
-  dropZone.addEventListener("dragleave", (e) => {
-    e.preventDefault();
-    dropZone.style.borderColor = "#cfd8dc";
-    dropZone.style.background = "#ffffff";
-  });
-
-  dropZone.addEventListener("drop", (e) => {
-    e.preventDefault();
-    const files = e.dataTransfer.files;
-    if (files.length) handleFile(files[0]);
-  });
-
-  fileInput.addEventListener("change", () => {
-    if (fileInput.files.length) handleFile(fileInput.files[0]);
-  });
-
-  function handleFile(file) {
-    // Validate Patient Form
-    const name = document.getElementById("patientName").value.trim();
-    const age = document.getElementById("patientAge").value.trim();
-    const mobile = document.getElementById("patientMobile").value.trim();
-
-    if (!name || !age || !mobile) {
-      alert(
-        "Please enter all patient details (Name, Age, Mobile) before uploading."
-      );
-      fileInput.value = ""; // Reset file input
-      return;
-    }
-
-    // Validate Age (Max 2 digits, numeric)
-    const ageRegex = /^[0-9]{1,2}$/;
-    if (!ageRegex.test(age) || parseInt(age) <= 0) {
-      alert("Age must be a valid number (1-99).");
-      fileInput.value = "";
-      return;
-    }
-
-    // Validate Mobile (Exactly 10 numeric digits)
-    const mobileRegex = /^[0-9]{10}$/;
-    if (!mobileRegex.test(mobile)) {
-      alert(
-        "Mobile number must correspond to Indian Standard (Exactly 10 numeric digits, no characters)."
-      );
-      fileInput.value = "";
-      return;
-    }
-
-    if (!file.type.startsWith("image/")) {
-      alert("Please upload an image file.");
-      return;
-    }
-
-    // Show Image Preview Immediate
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      previewImage.src = e.target.result;
-
-      // Store patient data AFTER image is ready ✅
-      window.currentPatientData = {
-        name: name,
-        age: age,
-        mobile: mobile,
-        imageSrc: e.target.result,
-      };
-    };
-    reader.readAsDataURL(file);
-
-    // UI Transition
-    uploadSection.classList.add("hidden");
-    loadingSection.classList.remove("hidden");
-
-    // Simulate Progressive Loading Steps
-    simulateSteps();
-
-    // Send to Backend
-    const formData = new FormData();
-    formData.append("file", file);
-    formData.append("name", name);
-    formData.append("age", age);
-    formData.append("mobile", mobile);
-
-    fetch("/analyze", {
-      method: "POST",
-      body: formData,
-    })
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error(`Server Error: ${response.statusText}`);
-        }
-        return response.json();
-      })
-      .then((data) => {
-        if (data.error) {
-          alert("Analysis Failed: " + data.error);
-          location.reload();
-        } else {
-          // Store result globally for print preview
-          window.currentAnalysisResult = data.data;
-
-          // Success - Show Result
-          setTimeout(() => {
-            showDashboard(data.data);
-          }, 2000); // 2s delay for effect
-        }
-      })
-      .catch((err) => {
-        console.error(err);
-        alert("An error occurred during upload: " + err.message);
-        // Reset UI
-        loadingSection.classList.add("hidden");
-        uploadSection.classList.remove("hidden");
-        fileInput.value = "";
-      });
-  }
-
-  function simulateSteps() {
-    const steps = ["step1", "step2", "step3", "step4", "step5"];
-    let delay = 0;
-    steps.forEach((id, index) => {
-      setTimeout(() => {
-        document
-          .querySelectorAll(".step")
-          .forEach((s) => s.classList.remove("active"));
-        document.getElementById(id).classList.add("active");
-      }, delay);
-      delay += 800;
+    dropZone.addEventListener("dragover", (e) => {
+        e.preventDefault();
+        dropZone.style.borderColor = "#009688";
+        dropZone.style.background = "#e0f2f1";
     });
-  }
 
-  let probChartInstance = null;
-  let riskChartInstance = null;
+    dropZone.addEventListener("dragleave", (e) => {
+        e.preventDefault();
+        dropZone.style.borderColor = "#cfd8dc";
+        dropZone.style.background = "#ffffff";
+    });
 
-  function showDashboard(result) {
-    loadingSection.classList.add("hidden");
-    dashboardSection.classList.remove("hidden");
+    dropZone.addEventListener("drop", (e) => {
+        e.preventDefault();
+        const files = e.dataTransfer.files;
+        if (files.length) handleFile(files[0]);
+    });
 
-    // Update Text
-    diagnosisText.innerText = result.class;
-    riskScore.innerText = `Progression Risk: ${result.progression_risk}%`;
-    meterFill.style.width = `${result.progression_risk}%`;
+    fileInput.addEventListener("change", () => {
+        if (fileInput.files.length) handleFile(fileInput.files[0]);
+    });
 
-    // Determine Color & Recommendation
-    const severity = result.severity_index;
-    let recText = "";
+    // Real-time Mobile Number Validation
+    const mobileInput = document.getElementById("patientMobile");
+    if (mobileInput) {
+        // Create Error Message Element
+        const mobileErrorMsg = document.createElement("small");
+        mobileErrorMsg.style.color = "#ef5350";
+        mobileErrorMsg.style.display = "none";
+        mobileErrorMsg.id = "mobileErrorMsg";
+        mobileInput.parentNode.appendChild(mobileErrorMsg);
 
-    if (severity === -1) {
-      // Invalid Input Case
-      diagnosisText.style.color = "#7f8c8d"; // Grey
-      recText =
-        result.error ||
-        "Image Rejected. Please upload a valid retinal fundus scan.";
-      // Hide risk info for invalid
-      riskScore.innerText = "N/A";
-      meterFill.style.width = "0%";
-    } else {
-      // Valid Diagnosis
-      const color =
-        severity === 0 ? "#00bfa5" : severity < 3 ? "#fb8c00" : "#d32f2f";
-      diagnosisText.style.color = color;
+        mobileInput.addEventListener("input", (e) => {
+            const mobile = e.target.value.trim();
+            const mobileRegex = /^[0-9]{10}$/;
 
-      const recs = [
-        `<strong>✅ Low Risk (No Apparent DR)</strong><br>
+            // Reset state
+            mobileInput.style.borderColor = "#ddd";
+            mobileErrorMsg.style.display = "none";
+            dropZone.style.pointerEvents = "auto";
+            dropZone.style.opacity = "1";
+
+            if (mobile.length === 10) {
+                if (mobileRegex.test(mobile)) {
+                    // Check Backend
+                    fetch(`/check_mobile/${mobile}`)
+                        .then(res => res.json())
+                        .then(data => {
+                            if (data.exists) {
+                                mobileInput.style.borderColor = "#ef5350";
+                                mobileErrorMsg.textContent = "Invalid Mobile Number: Patient already exists.";
+                                mobileErrorMsg.style.display = "block";
+                                // Disable upload
+                                dropZone.style.pointerEvents = "none";
+                                dropZone.style.opacity = "0.5";
+                            }
+                        });
+                } else {
+                    mobileErrorMsg.textContent = "Invalid Format: Must be 10 digits.";
+                    mobileErrorMsg.style.display = "block";
+                }
+            }
+        });
+    }
+
+    function handleFile(file) {
+        // Validate Patient Form
+        const name = document.getElementById("patientName").value.trim();
+        const age = document.getElementById("patientAge").value.trim();
+        const mobile = document.getElementById("patientMobile").value.trim();
+
+        if (!name || !age || !mobile) {
+            alert(
+                "Please enter all patient details (Name, Age, Mobile) before uploading."
+            );
+            fileInput.value = ""; // Reset file input
+            return;
+        }
+
+        // Validate Age (Max 2 digits, numeric)
+        const ageRegex = /^[0-9]{1,2}$/;
+        if (!ageRegex.test(age) || parseInt(age) <= 0) {
+            alert("Age must be a valid number (1-99).");
+            fileInput.value = "";
+            return;
+        }
+
+        // Validate Mobile (Exactly 10 numeric digits)
+        const mobileRegex = /^[0-9]{10}$/;
+        if (!mobileRegex.test(mobile)) {
+            alert(
+                "Mobile number must correspond to Indian Standard (Exactly 10 numeric digits, no characters)."
+            );
+            fileInput.value = "";
+            return;
+        }
+
+        if (!file.type.startsWith("image/")) {
+            alert("Please upload an image file.");
+            return;
+        }
+
+        // Show Image Preview Immediate
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            previewImage.src = e.target.result;
+
+            // Store patient data AFTER image is ready ✅
+            window.currentPatientData = {
+                name: name,
+                age: age,
+                mobile: mobile,
+                imageSrc: e.target.result,
+            };
+        };
+        reader.readAsDataURL(file);
+
+        // UI Transition
+        uploadSection.classList.add("hidden");
+        loadingSection.classList.remove("hidden");
+
+        // Simulate Progressive Loading Steps
+        simulateSteps();
+
+        // Send to Backend
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("name", name);
+        formData.append("age", age);
+        formData.append("mobile", mobile);
+
+        fetch("/analyze", {
+            method: "POST",
+            body: formData,
+        })
+            .then((response) => {
+                if (!response.ok) {
+                    throw new Error(`Server Error: ${response.statusText}`);
+                }
+                return response.json();
+            })
+            .then((data) => {
+                if (data.error) {
+                    alert("Analysis Failed: " + data.error);
+                    location.reload();
+                } else {
+                    // Store result globally for print preview
+                    window.currentAnalysisResult = data.data;
+
+                    // Success - Show Result
+                    setTimeout(() => {
+                        showDashboard(data.data);
+                    }, 2000); // 2s delay for effect
+                }
+            })
+            .catch((err) => {
+                console.error(err);
+                alert("An error occurred during upload: " + err.message);
+                // Reset UI
+                loadingSection.classList.add("hidden");
+                uploadSection.classList.remove("hidden");
+                fileInput.value = "";
+            });
+    }
+
+    function simulateSteps() {
+        const steps = ["step1", "step2", "step3", "step4", "step5"];
+        let delay = 0;
+        steps.forEach((id, index) => {
+            setTimeout(() => {
+                document
+                    .querySelectorAll(".step")
+                    .forEach((s) => s.classList.remove("active"));
+                document.getElementById(id).classList.add("active");
+            }, delay);
+            delay += 800;
+        });
+    }
+
+    let probChartInstance = null;
+    let riskChartInstance = null;
+
+    function showDashboard(result) {
+        loadingSection.classList.add("hidden");
+        dashboardSection.classList.remove("hidden");
+
+        // Update Text
+        diagnosisText.innerText = result.class;
+        riskScore.innerText = `Progression Risk: ${result.progression_risk}%`;
+        meterFill.style.width = `${result.progression_risk}%`;
+
+        // Determine Color & Recommendation
+        const severity = result.severity_index;
+        let recText = "";
+
+        if (severity === -1) {
+            // Invalid Input Case
+            diagnosisText.style.color = "#7f8c8d"; // Grey
+            recText =
+                result.error ||
+                "Image Rejected. Please upload a valid retinal fundus scan.";
+            // Hide risk info for invalid
+            riskScore.innerText = "N/A";
+            meterFill.style.width = "0%";
+        } else {
+            // Valid Diagnosis
+            const color =
+                severity === 0 ? "#00bfa5" : severity < 3 ? "#fb8c00" : "#d32f2f";
+            diagnosisText.style.color = color;
+
+            const recs = [
+                `<strong>✅ Low Risk (No Apparent DR)</strong><br>
                 <ul style='text-align:left; margin-top:10px; padding-left:20px;'>
                     <li>Maintain annual comprehensive eye examinations.</li>
                     <li>Continue strict control of blood glucose (HbA1c < 7%) and blood pressure.</li>
                     <li>Monitor lipid profile regularly.</li>
                 </ul>`,
 
-        `<strong>⚠️ Mild Non-Proliferative DR</strong><br>
+                `<strong>⚠️ Mild Non-Proliferative DR</strong><br>
                 <ul style='text-align:left; margin-top:10px; padding-left:20px;'>
                     <li>Schedule follow-up appointment in 6-12 months.</li>
                     <li>Optimize glycemic control to delay progression.</li>
                     <li>Manage blood pressure and cholesterol levels aggressively.</li>
                 </ul>`,
 
-        `<strong>👨‍⚕️ Moderate Non-Proliferative DR</strong><br>
+                `<strong>👨‍⚕️ Moderate Non-Proliferative DR</strong><br>
                 <ul style='text-align:left; margin-top:10px; padding-left:20px;'>
                     <li><strong>Referral Required:</strong> Consult ophthalmologist within 3-6 months.</li>
                     <li>Consider Fluorescein Angiography to assess retinal ischemia.</li>
                     <li>monitor for signs of Macular Edema.</li>
                 </ul>`,
 
-        `<strong>🚨 Severe Non-Proliferative DR</strong><br>
+                `<strong>🚨 Severe Non-Proliferative DR</strong><br>
                 <ul style='text-align:left; margin-top:10px; padding-left:20px;'>
                     <li><strong>Urgent Referral:</strong> Consult retina specialist within 2-4 weeks.</li>
-                    <li>High risk of progression to PDR. Closely monitor vision changes.</li>
+                    <li>High risk of progression to Proliferative DR. Closely monitor vision changes.</li>
                     <li>Pan-retinal photocoagulation (PRP) laser therapy may be indicated.</li>
                 </ul>`,
 
-        `<strong>🚑 Proliferative DR (High Risk)</strong><br>
+                `<strong>🚑 Proliferative DR (High Risk)</strong><br>
                 <ul style='text-align:left; margin-top:10px; padding-left:20px;'>
                     <li><strong>Immediate Intervention Required:</strong> High risk of severe vision loss.</li>
                     <li>Treatments typically include Anti-VEGF injections or Vitrectomy.</li>
                     <li>Avoid strenuous physical activity that increases blood pressure until treated.</li>
                 </ul>`,
-      ];
-      recText = recs[severity] || "Consult a specialist.";
+            ];
+            recText = recs[severity] || "Consult a specialist.";
+        }
+
+        recommendationText.innerHTML = recText;
+
+        // Charts
+        renderCharts(result);
+
+        // Setup Print Button
+        setupPrintButton();
     }
 
-    recommendationText.innerHTML = recText;
+    function renderCharts(result) {
+        const ctxProb = document.getElementById("probChart").getContext("2d");
+        const ctxRisk = document.getElementById("riskChart").getContext("2d");
 
-    // Charts
-    renderCharts(result);
+        // Prob Chart - Enforce Order
+        const orderedLabels = [
+            "No DR",
+            "Mild",
+            "Moderate",
+            "Severe",
+            "Proliferative",
+        ];
+        const data = orderedLabels.map((label) =>
+            (result.probabilities[label] * 100).toFixed(1)
+        );
+        const labels = orderedLabels;
 
-    // Setup Print Button
-    setupPrintButton();
-  }
+        if (probChartInstance) probChartInstance.destroy();
 
-  function renderCharts(result) {
-    const ctxProb = document.getElementById("probChart").getContext("2d");
-    const ctxRisk = document.getElementById("riskChart").getContext("2d");
+        probChartInstance = new Chart(ctxProb, {
+            type: "bar",
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: "Confidence (%)",
+                        data: data,
+                        backgroundColor: [
+                            "#00bfa5" /* No DR - Medical Teal */,
+                            "#29b6f6" /* Mild - Blue */,
+                            "#ffb74d" /* Moderate - Warning Orange */,
+                            "#ef5350" /* Severe - Soft Red */,
+                            "#c62828" /* Proliferative - Deep Red */,
+                        ],
+                        borderRadius: 5,
+                    },
+                ],
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: { y: { beginAtZero: true, max: 100 } },
+            },
+        });
 
-    // Prob Chart - Enforce Order
-    const orderedLabels = [
-      "No DR",
-      "Mild",
-      "Moderate",
-      "Severe",
-      "Proliferative",
-    ];
-    const data = orderedLabels.map((label) =>
-      (result.probabilities[label] * 100).toFixed(1)
-    );
-    const labels = orderedLabels;
+        // Risk Graph (Simulated Progression)
+        const timeLabels = ["Year 1", "Year 2", "Year 3", "Year 5"];
+        const baseRisk = result.progression_risk;
+        const severity = result.severity_index;
+        let slope = 5;
+        if (severity === 0) slope = 2;
+        else if (severity === 1) slope = 5;
+        else if (severity === 2) slope = 12;
+        else if (severity === 3) slope = 20;
+        else if (severity === 4) slope = 1;
 
-    if (probChartInstance) probChartInstance.destroy();
+        const riskTrend = timeLabels.map((t, i) =>
+            Math.min(100, baseRisk + i * slope)
+        );
 
-    probChartInstance = new Chart(ctxProb, {
-      type: "bar",
-      data: {
-        labels: labels,
-        datasets: [
-          {
-            label: "Confidence (%)",
-            data: data,
-            backgroundColor: [
-              "#00bfa5" /* No DR - Medical Teal */,
-              "#29b6f6" /* Mild - Blue */,
-              "#ffb74d" /* Moderate - Warning Orange */,
-              "#ef5350" /* Severe - Soft Red */,
-              "#c62828" /* Proliferative - Deep Red */,
-            ],
-            borderRadius: 5,
-          },
-        ],
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: { legend: { display: false } },
-        scales: { y: { beginAtZero: true, max: 100 } },
-      },
-    });
+        if (riskChartInstance) riskChartInstance.destroy();
 
-    // Risk Graph (Simulated Progression)
-    const timeLabels = ["Year 1", "Year 2", "Year 3", "Year 5"];
-    const baseRisk = result.progression_risk;
-    const severity = result.severity_index;
-    let slope = 5;
-    if (severity === 0) slope = 2;
-    else if (severity === 1) slope = 5;
-    else if (severity === 2) slope = 12;
-    else if (severity === 3) slope = 20;
-    else if (severity === 4) slope = 1;
-
-    const riskTrend = timeLabels.map((t, i) =>
-      Math.min(100, baseRisk + i * slope)
-    );
-
-    if (riskChartInstance) riskChartInstance.destroy();
-
-    riskChartInstance = new Chart(ctxRisk, {
-      type: "line",
-      data: {
-        labels: timeLabels,
-        datasets: [
-          {
-            label: "Projected Risk",
-            data: riskTrend,
-            borderColor: "#1976d2",
-            tension: 0.4,
-            fill: true,
-            backgroundColor: "rgba(25, 118, 210, 0.1)",
-          },
-        ],
-      },
-      options: {
-        responsive: true,
-        scales: { y: { beginAtZero: true, max: 100 } },
-      },
-    });
-  }
-
-  function setupPrintButton() {
-    const printBtn = document.getElementById("downloadPdfBtn");
-
-    if (!printBtn) {
-      console.error("Print button not found!");
-      return;
+        riskChartInstance = new Chart(ctxRisk, {
+            type: "line",
+            data: {
+                labels: timeLabels,
+                datasets: [
+                    {
+                        label: "Projected Risk",
+                        data: riskTrend,
+                        borderColor: "#1976d2",
+                        tension: 0.4,
+                        fill: true,
+                        backgroundColor: "rgba(25, 118, 210, 0.1)",
+                    },
+                ],
+            },
+            options: {
+                responsive: true,
+                scales: { y: { beginAtZero: true, max: 100 } },
+            },
+        });
     }
 
-    // Update button text and icon
-    printBtn.innerHTML = '<i class="fa fa-print"></i> Print Report';
-    printBtn.classList.remove("primary");
-    printBtn.classList.add("print-btn");
+    function setupPrintButton() {
+        const printBtn = document.getElementById("downloadPdfBtn");
 
-    // Remove any existing event listeners
-    const newBtn = printBtn.cloneNode(true);
-    printBtn.parentNode.replaceChild(newBtn, printBtn);
+        if (!printBtn) {
+            console.error("Print button not found!");
+            return;
+        }
 
-    newBtn.addEventListener("click", function (e) {
-      e.preventDefault();
-      e.stopPropagation();
+        // Update button text and icon
+        printBtn.innerHTML = '<i class="fa fa-print"></i> Print Report';
+        printBtn.classList.remove("primary");
+        printBtn.classList.add("print-btn");
 
-      // Show print preview
-      showPrintPreview();
-    });
+        // Remove any existing event listeners
+        const newBtn = printBtn.cloneNode(true);
+        printBtn.parentNode.replaceChild(newBtn, printBtn);
 
-    console.log("Print button setup complete");
-  }
+        newBtn.addEventListener("click", function (e) {
+            e.preventDefault();
+            e.stopPropagation();
 
-  function showPrintPreview() {
-    // Create print preview modal
-    const printPreview = document.createElement("div");
-    printPreview.id = "printPreview";
-    printPreview.style.cssText = `
+            // Show print preview
+            showPrintPreview();
+        });
+
+        console.log("Print button setup complete");
+    }
+
+    function showPrintPreview() {
+        // Create print preview modal
+        const printPreview = document.createElement("div");
+        printPreview.id = "printPreview";
+        printPreview.style.cssText = `
         position: fixed;
         top: 0;
         left: 0;
@@ -366,53 +409,53 @@ document.addEventListener("DOMContentLoaded", () => {
         box-sizing: border-box;
     `;
 
-    // Get current date
-    const now = new Date();
-    const formattedDate = now.toLocaleString("en-IN", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
+        // Get current date
+        const now = new Date();
+        const formattedDate = now.toLocaleString("en-IN", {
+            day: "2-digit",
+            month: "short",
+            year: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+        });
 
-    // Get severity color for diagnosis
-    const severity = window.currentAnalysisResult.severity_index;
-    let diagnosisColor = "#2c3e50";
-    if (severity === 0) diagnosisColor = "#00bfa5";
-    else if (severity === -1) diagnosisColor = "#95a5a6";
-    else if (severity === 4 || severity === 3) diagnosisColor = "#d32f2f";
-    else diagnosisColor = "#fb8c00";
+        // Get severity color for diagnosis
+        const severity = window.currentAnalysisResult.severity_index;
+        let diagnosisColor = "#2c3e50";
+        if (severity === 0) diagnosisColor = "#00bfa5";
+        else if (severity === -1) diagnosisColor = "#95a5a6";
+        else if (severity === 4 || severity === 3) diagnosisColor = "#d32f2f";
+        else diagnosisColor = "#fb8c00";
 
-    // Get recommendation text
-    const recommendationElement = document.getElementById("recommendationText");
-    let printRecommendation = recommendationElement
-      ? recommendationElement.innerHTML
-      : "";
+        // Get recommendation text
+        const recommendationElement = document.getElementById("recommendationText");
+        let printRecommendation = recommendationElement
+            ? recommendationElement.innerHTML
+            : "";
 
-    // Get the preview image src
-    const imageSrc = window.currentPatientData?.imageSrc || "";
+        // Get the preview image src
+        const imageSrc = window.currentPatientData?.imageSrc || "";
 
-    // Create image HTML with smaller size
-    let imageHtml = "";
-    if (imageSrc && imageSrc !== "" && imageSrc !== "data:") {
-      imageHtml = `
+        // Create image HTML with smaller size
+        let imageHtml = "";
+        if (imageSrc && imageSrc !== "" && imageSrc !== "data:") {
+            imageHtml = `
             <div style="text-align: center; margin-top: 8px;">
                 <img src="${imageSrc}" 
                      style="max-width: 180px; max-height: 120px; border: 1px solid #ddd; border-radius: 4px; display: inline-block;" 
                      onerror="this.style.display='none'" />
             </div>
         `;
-    } else {
-      imageHtml = `
+        } else {
+            imageHtml = `
             <div style="text-align: center; margin-top: 8px; padding: 15px; background: #f5f5f5; border-radius: 4px;">
                 <p style="color: #999; font-size: 12px; font-style: italic;">Image not available for print</p>
             </div>
         `;
-    }
+        }
 
-    // Create print content with smaller elements
-    printPreview.innerHTML = `
+        // Create print content with smaller elements
+        printPreview.innerHTML = `
         <div style="max-width: 210mm; margin: 0 auto; padding: 15px; box-sizing: border-box;">
             <!-- Print Header -->
             <div style="text-align: center; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid #d32f2f;">
@@ -427,8 +470,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 <h2 style="color: #2c3e50; font-size: 16px; margin: 0 0 5px 0; font-weight: 600;">DIAGNOSIS REPORT</h2>
                 <p style="color: #666; font-size: 11px; margin: 0;">
                     Report ID: RAI-${Date.now()
-                      .toString()
-                      .slice(-8)} | Generated: ${formattedDate}
+                .toString()
+                .slice(-8)} | Generated: ${formattedDate}
                 </p>
             </div>
             
@@ -440,21 +483,18 @@ document.addEventListener("DOMContentLoaded", () => {
                 <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 8px;">
                     <div>
                         <p style="margin: 2px 0; color: #666; font-size: 11px;"><strong>Name:</strong></p>
-                        <p style="margin: 2px 0; font-size: 13px; font-weight: 600;">${
-                          window.currentPatientData.name
-                        }</p>
+                        <p style="margin: 2px 0; font-size: 13px; font-weight: 600;">${window.currentPatientData.name
+            }</p>
                     </div>
                     <div>
                         <p style="margin: 2px 0; color: #666; font-size: 11px;"><strong>Age:</strong></p>
-                        <p style="margin: 2px 0; font-size: 13px;">${
-                          window.currentPatientData.age
-                        } years</p>
+                        <p style="margin: 2px 0; font-size: 13px;">${window.currentPatientData.age
+            } years</p>
                     </div>
                     <div>
                         <p style="margin: 2px 0; color: #666; font-size: 11px;"><strong>Mobile:</strong></p>
-                        <p style="margin: 2px 0; font-size: 13px;">${
-                          window.currentPatientData.mobile
-                        }</p>
+                        <p style="margin: 2px 0; font-size: 13px;">${window.currentPatientData.mobile
+            }</p>
                     </div>
                 </div>
             </div>
@@ -469,9 +509,8 @@ document.addEventListener("DOMContentLoaded", () => {
                         ${window.currentAnalysisResult.class}
                     </h1>
                     <p style="color: #666; margin-top: 5px; font-size: 14px;">
-                        Progression Risk: <strong>${
-                          window.currentAnalysisResult.progression_risk
-                        }%</strong>
+                        Progression Risk: <strong>${window.currentAnalysisResult.progression_risk
+            }%</strong>
                     </p>
                 </div>
             </div>
@@ -537,90 +576,355 @@ document.addEventListener("DOMContentLoaded", () => {
         </div>
     `;
 
-    document.body.appendChild(printPreview);
+        document.body.appendChild(printPreview);
 
-    // Render chart for print preview with smaller dimensions
-    setTimeout(() => {
-      renderPrintChart();
-    }, 100);
+        // Render chart for print preview with smaller dimensions
+        setTimeout(() => {
+            renderPrintChart();
+        }, 100);
 
-    // Disable main page scrolling
-    document.body.style.overflow = "hidden";
-  }
-  // 2. Patient History Tab
-  const diagnosisLink = Array.from(
-    document.querySelectorAll(".nav-links a")
-  ).find((el) => el.textContent.includes("Diagnosis"));
-  const historyLink = Array.from(
-    document.querySelectorAll(".nav-links a")
-  ).find((el) => el.textContent.includes("Patient History"));
+        // Disable main page scrolling
+        document.body.style.overflow = "hidden";
+    }
 
-  window.resetDiagnosis = function () {
-    // Clear Form
-    document.getElementById("patientName").value = "";
-    document.getElementById("patientAge").value = "";
-    document.getElementById("patientMobile").value = "";
-    fileInput.value = "";
-    document.getElementById("previewImage").src = "";
+    window.closePrintPreview = function () {
+        const preview = document.getElementById("printPreview");
+        if (preview) {
+            preview.remove();
+            document.body.style.overflow = "auto";
+        }
+    };
+    // 2. Patient History Tab
+    const diagnosisLink = Array.from(
+        document.querySelectorAll(".nav-links a")
+    ).find((el) => el.textContent.includes("Diagnosis"));
+    const historyLink = Array.from(
+        document.querySelectorAll(".nav-links a")
+    ).find((el) => el.textContent.includes("Patient History"));
 
-    // UI Reset
-    if (historySection) historySection.classList.add("hidden");
-    if (loadingSection) loadingSection.classList.add("hidden");
-    if (dashboardSection) dashboardSection.classList.add("hidden");
-    if (uploadSection) uploadSection.classList.remove("hidden");
+    window.resetDiagnosis = function () {
+        // Clear Form
+        document.getElementById("patientName").value = "";
+        document.getElementById("patientAge").value = "";
+        document.getElementById("patientMobile").value = "";
+        fileInput.value = "";
+        document.getElementById("previewImage").src = "";
 
-    // Nav Update
-    document
-      .querySelectorAll(".nav-links a")
-      .forEach((el) => el.classList.remove("active"));
-    if (diagnosisLink) diagnosisLink.classList.add("active");
+        // UI Reset
+        if (historySection) historySection.classList.add("hidden");
+        if (loadingSection) loadingSection.classList.add("hidden");
+        if (dashboardSection) dashboardSection.classList.add("hidden");
+        if (uploadSection) uploadSection.classList.remove("hidden");
 
-    window.scrollTo(0, 0);
-  };
+        // Nav Update
+        document
+            .querySelectorAll(".nav-links a")
+            .forEach((el) => el.classList.remove("active"));
+        if (diagnosisLink) diagnosisLink.classList.add("active");
 
-  if (diagnosisLink) {
-    diagnosisLink.addEventListener("click", (e) => {
-      e.preventDefault();
-      resetDiagnosis();
-    });
-  }
-
-  if (historyLink) {
-    historyLink.addEventListener("click", (e) => {
-      e.preventDefault();
-
-      // Immediate Navigation Update
-      if (uploadSection) uploadSection.classList.add("hidden");
-      if (loadingSection) loadingSection.classList.add("hidden");
-      if (dashboardSection) dashboardSection.classList.add("hidden");
-
-      if (historySection) {
-        historySection.classList.remove("hidden");
-        historySection.innerHTML =
-          '<div style="text-align:center; padding:50px;"><div class="loader-ring"></div></div>';
         window.scrollTo(0, 0);
-      }
+    };
 
-      // Fetch Data
-      fetch("/history")
-        .then((res) => res.json())
-        .then((data) => {
-          // Store global data for filtering
-          window.historyData = data;
-          renderHistory(data);
+    if (diagnosisLink) {
+        diagnosisLink.addEventListener("click", (e) => {
+            e.preventDefault();
+            resetDiagnosis();
         });
-    });
-  }
+    }
 
-  // History rendering functions remain the same...
-  window.renderHistory = function (data) {
-    // ... (keep all the existing history rendering code)
-  };
+    if (historyLink) {
+        historyLink.addEventListener("click", (e) => {
+            e.preventDefault();
 
-  // Add print-specific CSS
-  // Add print-specific CSS
-  const style = document.createElement("style");
-  style.textContent = `
+            // Immediate Navigation Update
+            if (uploadSection) uploadSection.classList.add("hidden");
+            if (loadingSection) loadingSection.classList.add("hidden");
+            if (dashboardSection) dashboardSection.classList.add("hidden");
+
+            if (historySection) {
+                historySection.classList.remove("hidden");
+                historySection.innerHTML =
+                    '<div style="text-align:center; padding:50px;"><div class="loader-ring"></div></div>';
+                window.scrollTo(0, 0);
+            }
+
+            // Fetch Data
+            fetch("/history")
+                .then((res) => res.json())
+                .then((data) => {
+                    // Store global data for filtering
+                    window.historyData = data;
+                    renderHistory(data);
+                });
+        });
+    }
+
+    // History rendering functions
+    window.renderHistory = function (data) {
+        if (!historySection) return;
+
+        if (!data || data.length === 0) {
+            historySection.innerHTML = `
+            <div class="card" style="text-align:center; padding:50px;">
+                <i class="fa fa-folder-open" style="font-size:48px; color:#ddd; margin-bottom:20px;"></i>
+                <h3 style="color:#666;">No Patient Records Found</h3>
+                <p style="color:#999;">Diagnostic history will appear here once you analyze samples.</p>
+                <button class="btn primary" onclick="resetDiagnosis()" style="margin-top:20px;">
+                    Start Diagnosis
+                </button>
+            </div>
+        `;
+            return;
+        }
+
+        // Generate Table
+        let html = `
+        <div class="card">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                <h3 style="margin:0;"><i class="fa fa-history"></i> Patient Records</h3>
+                <div style="display:flex; gap:10px;">
+                     <input type="text" id="recordSearch" placeholder="Search ID or Name..." 
+                        style="padding:8px 12px; border:1px solid #ddd; border-radius:6px; width:250px;">
+                     <button id="deleteSelectedBtn" class="btn secondary" style="background:#ef5350; color:white; display:none;">
+                        <i class="fa fa-trash"></i> Delete Selected
+                     </button>
+                </div>
+            </div>
+            
+            <div style="overflow-x:auto;">
+                <table class="history-table" style="width:100%; border-collapse:collapse;">
+                    <thead>
+                        <tr style="background:#f8f9fa; text-align:left;">
+                            <th style="padding:12px; border-bottom:2px solid #eee; width: 40px;">
+                                <input type="checkbox" id="selectAllHistory">
+                            </th>
+                            <th style="padding:12px; border-bottom:2px solid #eee;">Patient ID</th>
+                             <th style="padding:12px; border-bottom:2px solid #eee;">Date</th>
+                            <th style="padding:12px; border-bottom:2px solid #eee;">Name</th>
+                            <th style="padding:12px; border-bottom:2px solid #eee;">Age</th>
+                             <th style="padding:12px; border-bottom:2px solid #eee;">Diagnosis</th>
+                            <th style="padding:12px; border-bottom:2px solid #eee;">Risk</th>
+                            <th style="padding:12px; border-bottom:2px solid #eee;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="historyTableBody">
+    `;
+
+        // Process data rows (Newest First)
+        for (let index = data.length - 1; index >= 0; index--) {
+            const item = data[index];
+            // Determine Badge Color
+            let badgeColor = "#95a5a6";
+            let severityClass = "Invalid";
+
+            if (item.diagnosis.includes("No DR")) {
+                badgeColor = "#00bfa5"; // Teal
+                severityClass = "No DR";
+            } else if (item.diagnosis.includes("Mild")) {
+                badgeColor = "#29b6f6"; // Light Blue
+                severityClass = "Mild";
+            } else if (item.diagnosis.includes("Moderate")) {
+                badgeColor = "#ffb74d"; // Orange
+                severityClass = "Moderate";
+            } else if (item.diagnosis.includes("Severe")) {
+                badgeColor = "#ef5350"; // Red
+                severityClass = "Severe";
+            } else if (item.diagnosis.includes("Proliferative")) {
+                badgeColor = "#c62828"; // Dark Red
+                severityClass = "Proliferative DR";
+            }
+
+            const patientName = item.patient ? item.patient.name : "Unknown";
+            const patientAge = item.patient ? item.patient.age : "N/A";
+
+            html += `
+            <tr style="border-bottom:1px solid #eee;">
+                <td style="padding:12px;">
+                    <input type="checkbox" class="history-checkbox" data-index="${index}">
+                </td>
+                <td style="padding:12px; font-weight:600; font-family:monospace; color:#555;">${item.patient_id || "N/A"
+                }</td>
+                <td style="padding:12px; color:#666; font-size:12px;">${item.date
+                }</td>
+                <td style="padding:12px; font-weight:500;">${patientName}</td>
+                <td style="padding:12px; color:#666;">${patientAge}</td>
+                <td style="padding:12px;">
+                    <span style="background:${badgeColor}; color:white; padding:4px 10px; border-radius:20px; font-size:11px; font-weight:500;">
+                        ${severityClass}
+                    </span>
+                </td>
+                <td style="padding:12px; font-weight:600; color:#444;">${item.risk
+                }%</td>
+                <td style="padding:12px;">
+                    <button onclick="printHistoryRecord(${index})" style="border:none; background:none; cursor:pointer; color:#1976d2; margin-right:10px;" title="Print Report">
+                        <i class="fa fa-print"></i>
+                    </button>
+                    <button onclick="deleteRecord(${index})" style="border:none; background:none; cursor:pointer; color:#ef5350;" title="Delete Record">
+                        <i class="fa fa-times-circle"></i>
+                    </button>
+                </td>
+            </tr>
+        `;
+        }
+
+        html += `
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    `;
+
+        historySection.innerHTML = html;
+
+        // Attach Event Listeners for Search and Checkboxes
+        attachHistoryEvents();
+    };
+
+    // New Function to Print from History
+    window.printHistoryRecord = function (index) {
+        if (!window.historyData || !window.historyData[index]) return;
+
+        const item = window.historyData[index];
+
+        // 1. Restore Patient Data
+        window.currentPatientData = {
+            name: item.patient.name || "Unknown",
+            age: item.patient.age || "N/A",
+            mobile: item.patient.mobile || "N/A",
+            imageSrc: "" // History doesn't store the full base64 image by default to save space, sadly.
+        };
+
+        // 2. Restore Analysis Result
+        // If we have the new full object, use it. Otherwise, reconstruct partial.
+        if (item.analysis_result) {
+            window.currentAnalysisResult = item.analysis_result;
+        } else {
+            // Legacy/Fallback reconstruction
+            let severityIndex = 0;
+            const diag = item.diagnosis.toLowerCase();
+            if (diag.includes('mild')) severityIndex = 1;
+            else if (diag.includes('moderate')) severityIndex = 2;
+            else if (diag.includes('severe')) severityIndex = 3;
+            else if (diag.includes('proliferative')) severityIndex = 4;
+
+            // Fake probabilities just for UI to not crash
+            let probs = { "No DR": 0, "Mild": 0, "Moderate": 0, "Severe": 0, "Proliferative": 0 };
+            let key = item.diagnosis;
+            // Normalize key to match CLASSES
+            if (key === "Proliferate_DR") key = "Proliferative";
+            probs[key] = 1.0;
+
+            window.currentAnalysisResult = {
+                class: item.diagnosis,
+                severity_index: severityIndex,
+                progression_risk: item.risk,
+                probabilities: probs
+            };
+        }
+
+        // 3. Show Preview
+        showPrintPreview();
+    };
+
+    // Helper for deleting individual records
+    window.deleteRecord = function (index) {
+        if (confirm("Are you sure you want to delete this record?")) {
+            fetch(`/delete_history/${index}`, {
+                method: "DELETE",
+            })
+                .then((res) => res.json())
+                .then((result) => {
+                    if (result.success) {
+                        // Refresh data
+                        historyLink.click();
+                    } else {
+                        alert("Error deleting record");
+                    }
+                });
+        }
+    };
+
+    function attachHistoryEvents() {
+        // 1. Search Functionality
+        const searchInput = document.getElementById("recordSearch");
+        if (searchInput) {
+            searchInput.addEventListener("keyup", (e) => {
+                const term = e.target.value.toLowerCase();
+                const rows = document.querySelectorAll("#historyTableBody tr");
+
+                rows.forEach((row) => {
+                    const text = row.innerText.toLowerCase();
+                    row.style.display = text.includes(term) ? "" : "none";
+                });
+            });
+        }
+
+        // 2. Bulk Delete Functionality
+        const selectAll = document.getElementById("selectAllHistory");
+        const checkboxes = document.querySelectorAll(".history-checkbox");
+        const deleteBtn = document.getElementById("deleteSelectedBtn");
+
+        function updateDeleteBtn() {
+            const checked = document.querySelectorAll(".history-checkbox:checked");
+            if (checked.length > 0) {
+                deleteBtn.style.display = "block";
+                deleteBtn.innerHTML = `<i class="fa fa-trash"></i> Delete Selected (${checked.length})`;
+            } else {
+                deleteBtn.style.display = "none";
+            }
+        }
+
+        if (selectAll) {
+            selectAll.addEventListener("change", (e) => {
+                checkboxes.forEach((cb) => {
+                    // Only check visible checkboxes if filtered
+                    if (cb.closest('tr').style.display !== 'none') {
+                        cb.checked = e.target.checked;
+                    }
+                });
+                updateDeleteBtn();
+            });
+        }
+
+        checkboxes.forEach((cb) => {
+            cb.addEventListener("change", updateDeleteBtn);
+        });
+
+        if (deleteBtn) {
+            deleteBtn.addEventListener("click", () => {
+                const checked = document.querySelectorAll(".history-checkbox:checked");
+                if (
+                    !confirm(
+                        `Are you sure you want to delete ${checked.length} records? This cannot be undone.`
+                    )
+                )
+                    return;
+
+                const indices = Array.from(checked).map((cb) =>
+                    parseInt(cb.dataset.index)
+                );
+
+                fetch("/delete_history_bulk", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ indices: indices }),
+                })
+                    .then((res) => res.json())
+                    .then((result) => {
+                        if (result.success) {
+                            historyLink.click(); // Refresh
+                        } else {
+                            alert("Bulk delete failed");
+                        }
+                    });
+            });
+        }
+    }
+
+    // Add print-specific CSS
+    // Add print-specific CSS
+    const style = document.createElement("style");
+    style.textContent = `
     @media print {
         body > *:not(#printPreview) {
             display: none !important;
@@ -661,51 +965,51 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 `;
-  document.head.appendChild(style);
+    document.head.appendChild(style);
 
-  function renderPrintChart() {
-    const canvas = document.getElementById("printProbChart");
-    if (!canvas || !window.currentAnalysisResult) return;
+    function renderPrintChart() {
+        const canvas = document.getElementById("printProbChart");
+        if (!canvas || !window.currentAnalysisResult) return;
 
-    const ctx = canvas.getContext("2d");
+        const ctx = canvas.getContext("2d");
 
-    const orderedLabels = [
-      "No DR",
-      "Mild",
-      "Moderate",
-      "Severe",
-      "Proliferative",
-    ];
-    const data = orderedLabels.map((l) =>
-      (window.currentAnalysisResult.probabilities[l] * 100).toFixed(1)
-    );
+        const orderedLabels = [
+            "No DR",
+            "Mild",
+            "Moderate",
+            "Severe",
+            "Proliferative",
+        ];
+        const data = orderedLabels.map((l) =>
+            (window.currentAnalysisResult.probabilities[l] * 100).toFixed(1)
+        );
 
-    new Chart(ctx, {
-      type: "bar",
-      data: {
-        labels: orderedLabels,
-        datasets: [
-          {
-            data: data,
-            backgroundColor: [
-              "#00bfa5",
-              "#29b6f6",
-              "#ffb74d",
-              "#ef5350",
-              "#c62828",
-            ],
-            borderRadius: 6,
-          },
-        ],
-      },
-      options: {
-        responsive: false,
-        animation: false,
-        plugins: { legend: { display: false } },
-        scales: {
-          y: { beginAtZero: true, max: 100 },
-        },
-      },
-    });
-  }
+        new Chart(ctx, {
+            type: "bar",
+            data: {
+                labels: orderedLabels,
+                datasets: [
+                    {
+                        data: data,
+                        backgroundColor: [
+                            "#00bfa5",
+                            "#29b6f6",
+                            "#ffb74d",
+                            "#ef5350",
+                            "#c62828",
+                        ],
+                        borderRadius: 6,
+                    },
+                ],
+            },
+            options: {
+                responsive: false,
+                animation: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: { beginAtZero: true, max: 100 },
+                },
+            },
+        });
+    }
 });

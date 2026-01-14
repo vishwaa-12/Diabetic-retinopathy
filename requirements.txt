@@ -1,3 +1,8 @@
 flask
-
-
+pillow
+numpy
+scikit-learn
+tensorflow
+xgboost
+imbalanced-learn
+opencv-python

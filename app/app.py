@@ -132,6 +132,18 @@ def get_history():
     except:
         return jsonify([])
 
+@app.route('/check_mobile/<mobile>')
+@login_required
+def check_mobile(mobile):
+    try:
+        with open('history.json', 'r') as f:
+            data = json.load(f)
+            
+        exists = any(item.get('patient', {}).get('mobile') == mobile for item in data)
+        return jsonify({'exists': exists})
+    except:
+        return jsonify({'exists': False})
+
 @app.route('/delete_history/<int:index>', methods=['DELETE'])
 @login_required
 def delete_history_item(index):
