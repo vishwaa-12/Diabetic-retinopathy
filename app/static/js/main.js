@@ -90,6 +90,9 @@ document.addEventListener("DOMContentLoaded", () => {
         const name = document.getElementById("patientName").value.trim();
         const age = document.getElementById("patientAge").value.trim();
         const mobile = document.getElementById("patientMobile").value.trim();
+        const email = document.getElementById("patientEmail").value.trim();
+        const gender = document.getElementById("patientGender").value;
+        const diabetesDuration = document.getElementById("diabetesDuration").value.trim();
 
         if (!name || !age || !mobile) {
             alert(
@@ -132,6 +135,9 @@ document.addEventListener("DOMContentLoaded", () => {
                 name: name,
                 age: age,
                 mobile: mobile,
+                email: email,
+                gender: gender,
+                diabetesDuration: diabetesDuration,
                 imageSrc: e.target.result,
             };
         };
@@ -150,6 +156,9 @@ document.addEventListener("DOMContentLoaded", () => {
         formData.append("name", name);
         formData.append("age", age);
         formData.append("mobile", mobile);
+        formData.append("email", email);
+        formData.append("gender", gender);
+        formData.append("diabetes_duration", diabetesDuration);
 
         fetch("/analyze", {
             method: "POST",
@@ -168,6 +177,9 @@ document.addEventListener("DOMContentLoaded", () => {
                 } else {
                     // Store result globally for print preview
                     window.currentAnalysisResult = data.data;
+                    // Store additional data
+                    window.currentPatientData.diagnosis_id = data.diagnosis_id;
+                    window.currentPatientData.patient_id = data.patient_id;
 
                     // Success - Show Result
                     setTimeout(() => {
@@ -594,6 +606,7 @@ document.addEventListener("DOMContentLoaded", () => {
             document.body.style.overflow = "auto";
         }
     };
+
     // 2. Patient History Tab
     const diagnosisLink = Array.from(
         document.querySelectorAll(".nav-links a")
@@ -607,6 +620,9 @@ document.addEventListener("DOMContentLoaded", () => {
         document.getElementById("patientName").value = "";
         document.getElementById("patientAge").value = "";
         document.getElementById("patientMobile").value = "";
+        document.getElementById("patientEmail").value = "";
+        document.getElementById("patientGender").value = "";
+        document.getElementById("diabetesDuration").value = "";
         fileInput.value = "";
         document.getElementById("previewImage").src = "";
 
@@ -643,24 +659,58 @@ document.addEventListener("DOMContentLoaded", () => {
 
             if (historySection) {
                 historySection.classList.remove("hidden");
-                historySection.innerHTML =
-                    '<div style="text-align:center; padding:50px;"><div class="loader-ring"></div></div>';
+                historySection.innerHTML = `
+                    <div style="text-align:center; padding:20px;">
+                        <div class="loader-ring"></div>
+                        <p style="margin-top:15px; color:#666;">Loading patient records...</p>
+                    </div>
+                `;
                 window.scrollTo(0, 0);
             }
 
-            // Fetch Data
-            fetch("/history")
+            // Fetch Data with pagination
+            fetch("/history?page=1&limit=50")
                 .then((res) => res.json())
                 .then((data) => {
+                    if (data.error) {
+                        historySection.innerHTML = `
+                            <div class="card" style="text-align:center; padding:50px;">
+                                <h3 style="color:#666;">Error Loading History</h3>
+                                <p style="color:#999;">${data.error}</p>
+                                <button class="btn primary" onclick="historyLink.click()" style="margin-top:20px;">
+                                    Retry
+                                </button>
+                            </div>
+                        `;
+                        return;
+                    }
+                    
                     // Store global data for filtering
-                    window.historyData = data;
-                    renderHistory(data);
+                    window.historyData = data.data;
+                    window.historyPagination = {
+                        total: data.total,
+                        page: data.page,
+                        limit: data.limit,
+                        pages: data.pages
+                    };
+                    renderHistory(data.data, data);
+                })
+                .catch(err => {
+                    historySection.innerHTML = `
+                        <div class="card" style="text-align:center; padding:50px;">
+                            <h3 style="color:#666;">Network Error</h3>
+                            <p style="color:#999;">Failed to load patient records. Please check your connection.</p>
+                            <button class="btn primary" onclick="historyLink.click()" style="margin-top:20px;">
+                                Retry
+                            </button>
+                        </div>
+                    `;
                 });
         });
     }
 
     // History rendering functions
-    window.renderHistory = function (data) {
+    window.renderHistory = function (data, paginationData = null) {
         if (!historySection) return;
 
         if (!data || data.length === 0) {
@@ -681,8 +731,11 @@ document.addEventListener("DOMContentLoaded", () => {
         let html = `
         <div class="card">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-                <h3 style="margin:0;"><i class="fa fa-history"></i> Patient Records</h3>
-                <div style="display:flex; gap:10px;">
+                <div>
+                    <h3 style="margin:0;"><i class="fa fa-history"></i> Patient Records</h3>
+                    ${paginationData ? `<small style="color:#666;">Showing ${data.length} of ${paginationData.total} records</small>` : ''}
+                </div>
+                <div style="display:flex; gap:10px; align-items:center;">
                      <input type="text" id="recordSearch" placeholder="Search ID or Name..." 
                         style="padding:8px 12px; border:1px solid #ddd; border-radius:6px; width:250px;">
                      <button id="deleteSelectedBtn" class="btn secondary" style="background:#ef5350; color:white; display:none;">
@@ -698,11 +751,11 @@ document.addEventListener("DOMContentLoaded", () => {
                             <th style="padding:12px; border-bottom:2px solid #eee; width: 40px;">
                                 <input type="checkbox" id="selectAllHistory">
                             </th>
+                            <th style="padding:12px; border-bottom:2px solid #eee;">Date</th>
                             <th style="padding:12px; border-bottom:2px solid #eee;">Patient ID</th>
-                             <th style="padding:12px; border-bottom:2px solid #eee;">Date</th>
                             <th style="padding:12px; border-bottom:2px solid #eee;">Name</th>
                             <th style="padding:12px; border-bottom:2px solid #eee;">Age</th>
-                             <th style="padding:12px; border-bottom:2px solid #eee;">Diagnosis</th>
+                            <th style="padding:12px; border-bottom:2px solid #eee;">Diagnosis</th>
                             <th style="padding:12px; border-bottom:2px solid #eee;">Risk</th>
                             <th style="padding:12px; border-bottom:2px solid #eee;">Actions</th>
                         </tr>
@@ -710,26 +763,27 @@ document.addEventListener("DOMContentLoaded", () => {
                     <tbody id="historyTableBody">
     `;
 
-        // Process data rows (Newest First)
-        for (let index = data.length - 1; index >= 0; index--) {
-            const item = data[index];
+        // Process data rows
+        data.forEach((item, index) => {
             // Determine Badge Color
             let badgeColor = "#95a5a6";
             let severityClass = "Invalid";
 
-            if (item.diagnosis.includes("No DR")) {
+            const diagnosis = item.diagnosis || item.diagnosis_class || "";
+            
+            if (diagnosis.includes("No DR")) {
                 badgeColor = "#00bfa5"; // Teal
                 severityClass = "No DR";
-            } else if (item.diagnosis.includes("Mild")) {
+            } else if (diagnosis.includes("Mild")) {
                 badgeColor = "#29b6f6"; // Light Blue
                 severityClass = "Mild";
-            } else if (item.diagnosis.includes("Moderate")) {
+            } else if (diagnosis.includes("Moderate")) {
                 badgeColor = "#ffb74d"; // Orange
                 severityClass = "Moderate";
-            } else if (item.diagnosis.includes("Severe")) {
+            } else if (diagnosis.includes("Severe")) {
                 badgeColor = "#ef5350"; // Red
                 severityClass = "Severe";
-            } else if (item.diagnosis.includes("Proliferative")) {
+            } else if (diagnosis.includes("Proliferative")) {
                 badgeColor = "#c62828"; // Dark Red
                 severityClass = "Proliferative DR";
             }
@@ -740,12 +794,10 @@ document.addEventListener("DOMContentLoaded", () => {
             html += `
             <tr style="border-bottom:1px solid #eee;">
                 <td style="padding:12px;">
-                    <input type="checkbox" class="history-checkbox" data-index="${index}">
+                    <input type="checkbox" class="history-checkbox" data-id="${item.id}">
                 </td>
-                <td style="padding:12px; font-weight:600; font-family:monospace; color:#555;">${item.patient_id || "N/A"
-                }</td>
-                <td style="padding:12px; color:#666; font-size:12px;">${item.date
-                }</td>
+                <td style="padding:12px; color:#666; font-size:12px;">${item.date || ""}</td>
+                <td style="padding:12px; font-weight:600; font-family:monospace; color:#555;">${item.patient_id || "N/A"}</td>
                 <td style="padding:12px; font-weight:500;">${patientName}</td>
                 <td style="padding:12px; color:#666;">${patientAge}</td>
                 <td style="padding:12px;">
@@ -753,83 +805,130 @@ document.addEventListener("DOMContentLoaded", () => {
                         ${severityClass}
                     </span>
                 </td>
-                <td style="padding:12px; font-weight:600; color:#444;">${item.risk
-                }%</td>
+                <td style="padding:12px; font-weight:600; color:#444;">${item.risk || "0"}%</td>
                 <td style="padding:12px;">
-                    <button onclick="printHistoryRecord(${index})" style="border:none; background:none; cursor:pointer; color:#1976d2; margin-right:10px;" title="Print Report">
+                    <button onclick="printHistoryRecord('${item.id}')" style="border:none; background:none; cursor:pointer; color:#1976d2; margin-right:10px;" title="Print Report">
                         <i class="fa fa-print"></i>
                     </button>
-                    <button onclick="deleteRecord(${index})" style="border:none; background:none; cursor:pointer; color:#ef5350;" title="Delete Record">
+                    <button onclick="deleteRecord('${item.id}')" style="border:none; background:none; cursor:pointer; color:#ef5350;" title="Delete Record">
                         <i class="fa fa-times-circle"></i>
                     </button>
                 </td>
             </tr>
         `;
-        }
+        });
 
         html += `
                     </tbody>
                 </table>
             </div>
-        </div>
-    `;
+        `;
 
+        // Add pagination controls if we have pagination data
+        if (paginationData && paginationData.pages > 1) {
+            html += `
+            <div style="display:flex; justify-content:center; align-items:center; margin-top:20px; padding-top:15px; border-top:1px solid #eee;">
+                <button onclick="loadHistoryPage(${paginationData.page - 1})" 
+                        ${paginationData.page <= 1 ? 'disabled' : ''}
+                        class="btn secondary" style="padding:6px 12px; margin:0 5px;">
+                    <i class="fa fa-chevron-left"></i> Previous
+                </button>
+                <span style="margin:0 15px; color:#666;">
+                    Page ${paginationData.page} of ${paginationData.pages}
+                </span>
+                <button onclick="loadHistoryPage(${paginationData.page + 1})" 
+                        ${paginationData.page >= paginationData.pages ? 'disabled' : ''}
+                        class="btn secondary" style="padding:6px 12px; margin:0 5px;">
+                    Next <i class="fa fa-chevron-right"></i>
+                </button>
+            </div>
+        `;
+        }
+
+        html += `</div>`;
         historySection.innerHTML = html;
 
         // Attach Event Listeners for Search and Checkboxes
         attachHistoryEvents();
     };
 
+    // Add pagination function
+    window.loadHistoryPage = function (page) {
+        if (page < 1) return;
+        
+        historySection.innerHTML = `
+            <div style="text-align:center; padding:20px;">
+                <div class="loader-ring"></div>
+                <p style="margin-top:15px; color:#666;">Loading page ${page}...</p>
+            </div>
+        `;
+        
+        fetch(`/history?page=${page}&limit=50`)
+            .then((res) => res.json())
+            .then((data) => {
+                window.historyData = data.data;
+                window.historyPagination = {
+                    total: data.total,
+                    page: data.page,
+                    limit: data.limit,
+                    pages: data.pages
+                };
+                renderHistory(data.data, data);
+            })
+            .catch(err => {
+                historySection.innerHTML = `
+                    <div class="card" style="text-align:center; padding:50px;">
+                        <h3 style="color:#666;">Error Loading Page</h3>
+                        <p style="color:#999;">${err.message}</p>
+                        <button class="btn primary" onclick="loadHistoryPage(${page})" style="margin-top:20px;">
+                            Retry
+                        </button>
+                    </div>
+                `;
+            });
+    };
+
     // New Function to Print from History
-    window.printHistoryRecord = function (index) {
-        if (!window.historyData || !window.historyData[index]) return;
+    window.printHistoryRecord = function (diagnosisId) {
+        // First, fetch the full diagnosis data
+        fetch(`/diagnosis/${diagnosisId}`)
+            .then(res => res.json())
+            .then(item => {
+                if (item.error) {
+                    alert("Error loading record: " + item.error);
+                    return;
+                }
 
-        const item = window.historyData[index];
+                // 1. Restore Patient Data
+                window.currentPatientData = {
+                    name: item.patient?.name || "Unknown",
+                    age: item.patient?.age || "N/A",
+                    mobile: item.patient?.mobile || "N/A",
+                    email: item.patient?.email || "",
+                    gender: item.patient?.gender || "",
+                    imageSrc: item.image_filename ? `/diagnosis/image/${diagnosisId}` : ""
+                };
 
-        // 1. Restore Patient Data
-        window.currentPatientData = {
-            name: item.patient.name || "Unknown",
-            age: item.patient.age || "N/A",
-            mobile: item.patient.mobile || "N/A",
-            imageSrc: "" // History doesn't store the full base64 image by default to save space, sadly.
-        };
+                // 2. Restore Analysis Result
+                window.currentAnalysisResult = {
+                    class: item.diagnosis || item.diagnosis_class || "",
+                    severity_index: item.severity_index || 0,
+                    progression_risk: item.risk || item.progression_risk || 0,
+                    probabilities: item.probabilities || { "No DR": 0, "Mild": 0, "Moderate": 0, "Severe": 0, "Proliferative": 0 }
+                };
 
-        // 2. Restore Analysis Result
-        // If we have the new full object, use it. Otherwise, reconstruct partial.
-        if (item.analysis_result) {
-            window.currentAnalysisResult = item.analysis_result;
-        } else {
-            // Legacy/Fallback reconstruction
-            let severityIndex = 0;
-            const diag = item.diagnosis.toLowerCase();
-            if (diag.includes('mild')) severityIndex = 1;
-            else if (diag.includes('moderate')) severityIndex = 2;
-            else if (diag.includes('severe')) severityIndex = 3;
-            else if (diag.includes('proliferative')) severityIndex = 4;
-
-            // Fake probabilities just for UI to not crash
-            let probs = { "No DR": 0, "Mild": 0, "Moderate": 0, "Severe": 0, "Proliferative": 0 };
-            let key = item.diagnosis;
-            // Normalize key to match CLASSES
-            if (key === "Proliferate_DR") key = "Proliferative";
-            probs[key] = 1.0;
-
-            window.currentAnalysisResult = {
-                class: item.diagnosis,
-                severity_index: severityIndex,
-                progression_risk: item.risk,
-                probabilities: probs
-            };
-        }
-
-        // 3. Show Preview
-        showPrintPreview();
+                // 3. Show Preview
+                showPrintPreview();
+            })
+            .catch(err => {
+                alert("Error loading record: " + err.message);
+            });
     };
 
     // Helper for deleting individual records
-    window.deleteRecord = function (index) {
+    window.deleteRecord = function (diagnosisId) {
         if (confirm("Are you sure you want to delete this record?")) {
-            fetch(`/delete_history/${index}`, {
+            fetch(`/delete_diagnosis/${diagnosisId}`, {
                 method: "DELETE",
             })
                 .then((res) => res.json())
@@ -838,8 +937,11 @@ document.addEventListener("DOMContentLoaded", () => {
                         // Refresh data
                         historyLink.click();
                     } else {
-                        alert("Error deleting record");
+                        alert("Error deleting record: " + (result.error || "Unknown error"));
                     }
+                })
+                .catch(err => {
+                    alert("Error deleting record: " + err.message);
                 });
         }
     };
@@ -849,13 +951,24 @@ document.addEventListener("DOMContentLoaded", () => {
         const searchInput = document.getElementById("recordSearch");
         if (searchInput) {
             searchInput.addEventListener("keyup", (e) => {
-                const term = e.target.value.toLowerCase();
+                const term = e.target.value.trim();
+                
+                if (term.length === 0) {
+                    // Show all rows if search is empty
+                    const rows = document.querySelectorAll("#historyTableBody tr");
+                    rows.forEach(row => row.style.display = "");
+                    return;
+                }
+                
+                // Client-side search on existing data
                 const rows = document.querySelectorAll("#historyTableBody tr");
-
-                rows.forEach((row) => {
+                rows.forEach(row => {
                     const text = row.innerText.toLowerCase();
-                    row.style.display = text.includes(term) ? "" : "none";
+                    row.style.display = text.includes(term.toLowerCase()) ? "" : "none";
                 });
+                
+                // Update delete button visibility
+                updateDeleteBtn();
             });
         }
 
@@ -893,35 +1006,35 @@ document.addEventListener("DOMContentLoaded", () => {
         if (deleteBtn) {
             deleteBtn.addEventListener("click", () => {
                 const checked = document.querySelectorAll(".history-checkbox:checked");
-                if (
-                    !confirm(
-                        `Are you sure you want to delete ${checked.length} records? This cannot be undone.`
-                    )
-                )
+                if (!confirm(`Are you sure you want to delete ${checked.length} records? This cannot be undone.`))
                     return;
 
-                const indices = Array.from(checked).map((cb) =>
-                    parseInt(cb.dataset.index)
+                const diagnosisIds = Array.from(checked).map((cb) => cb.dataset.id);
+                
+                // For MongoDB, we need to delete one by one
+                let promises = diagnosisIds.map(id => 
+                    fetch(`/delete_diagnosis/${id}`, { method: "DELETE" })
+                        .then(res => res.json())
                 );
-
-                fetch("/delete_history_bulk", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ indices: indices }),
-                })
-                    .then((res) => res.json())
-                    .then((result) => {
-                        if (result.success) {
+                
+                Promise.all(promises)
+                    .then(results => {
+                        const successCount = results.filter(r => r && r.success).length;
+                        if (successCount === diagnosisIds.length) {
+                            alert(`Successfully deleted ${successCount} records`);
                             historyLink.click(); // Refresh
                         } else {
-                            alert("Bulk delete failed");
+                            alert(`Deleted ${successCount} of ${diagnosisIds.length} records. Some may have failed.`);
+                            historyLink.click(); // Refresh anyway
                         }
+                    })
+                    .catch(err => {
+                        alert("Error during bulk delete: " + err.message);
                     });
             });
         }
     }
 
-    // Add print-specific CSS
     // Add print-specific CSS
     const style = document.createElement("style");
     style.textContent = `
@@ -935,10 +1048,10 @@ document.addEventListener("DOMContentLoaded", () => {
             width: 210mm !important;
             min-height: 297mm !important;
             margin-top: 0mm !important;
-            padding: 6mm !important;       /* reduced further */
+            padding: 6mm !important;
             background: white !important;
-            font-size: 11px !important;    /* shrink fonts more */
-            line-height: 1.2 !important;   /* tighter spacing */
+            font-size: 11px !important;
+            line-height: 1.2 !important;
         }
         
         #printPreview * {
@@ -950,13 +1063,13 @@ document.addEventListener("DOMContentLoaded", () => {
         }
         
         img {
-            max-width: 150px !important;    /* further reduced */
-            max-height: 100px !important;   /* further reduced */
+            max-width: 150px !important;
+            max-height: 100px !important;
         }
         
         #printProbChart {
-            width: 500px !important;        /* smaller chart */
-            height: 180px !important;       /* smaller chart */
+            width: 500px !important;
+            height: 180px !important;
         }
         
         * {

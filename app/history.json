@@ -82,5 +82,29 @@
             },
             "progression_risk": 85.6
         }
+    },
+    {
+        "patient_id": "PID-1066367B",
+        "date": "2026-01-14 17:34",
+        "diagnosis": "Moderate",
+        "risk": 43.0,
+        "notes": "Automated Analysis",
+        "patient": {
+            "name": "Sivanesan",
+            "age": "98",
+            "mobile": "9629632197"
+        },
+        "analysis_result": {
+            "class": "Moderate",
+            "severity_index": 2,
+            "probabilities": {
+                "No DR": 0.04031573059879844,
+                "Mild": 0.05854625227036013,
+                "Moderate": 0.6476180238145375,
+                "Severe": 0.06389480883335776,
+                "Proliferative": 0.18962518448294607
+            },
+            "progression_risk": 43.0
+        }
     }
 ]
