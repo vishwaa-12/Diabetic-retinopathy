@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RetinaAI - Login</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/static/css/style.css">
+    <style>
+        .auth-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .auth-card {
+            background: rgba(255, 255, 255, 0.9);
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 400px;
+            backdrop-filter: blur(10px);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #2c3e50;
+            font-weight: 500;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-family: 'Outfit', sans-serif;
+            box-sizing: border-box;
+            /* Fix padding issue */
+        }
+
+        .switch-auth {
+            text-align: center;
+            margin-top: 20px;
+            color: #7f8c8d;
+        }
+
+        .switch-auth a {
+            color: #0288d1;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+        }
+    </style>
+</head>
+
+
+<body>
+
+    <div class="auth-container">
+        <!-- LOGIN FORM -->
+        <div class="auth-card" id="loginCard">
+            <h2 style="text-align:center; color:#0288d1; margin-bottom:30px;">
+                <i class="fa fa-hospital-user"></i> Medical Center Login
+            </h2>
+
+            <form id="loginForm">
+                <div class="form-group">
+                    <label>Center ID</label>
+                    <input type="text" id="loginId" required placeholder="Enter Center ID (e.g. DRD_Center)"
+                        style="text-align:center; letter-spacing:1px; font-weight:600;">
+                </div>
+
+                <button type="submit" class="btn primary" style="width:100%;">
+                    <i class="fa fa-sign-in-alt"></i> Access Portal
+                </button>
+            </form>
+
+            <div style="margin-top:20px; text-align:center; font-size:0.9rem; color:#95a5a6;">
+                <i class="fa fa-lock"></i> Authorized Medical Personnel Only
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // LOGIN LOGIC
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const login_id = document.getElementById('loginId').value.trim();
+
+            try {
+                const res = await fetch('/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ login_id })
+                });
+                const data = await res.json();
+
+                if (data.success) {
+                    // Set Client-Side Session Flag (Cleared when browser closes)
+                    sessionStorage.setItem('session_active', 'true');
+                    window.location.href = '/';
+                } else {
+                    alert(data.error);
+                }
+            } catch (err) {
+                alert('Login failed. Check connection.');
+            }
+        });
+    </script>
+</body>
+
+</html>

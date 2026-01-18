@@ -1,0 +1,8 @@
+colored_images/
+__pycache__/
+*.pyc
+venv/
+.env
+.DS_Store
+uploads/
+.vscode/

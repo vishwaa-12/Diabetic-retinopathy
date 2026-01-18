@@ -1,0 +1,8 @@
+Flask==2.3.3
+opencv-python
+numpy
+scikit-learn
+xgboost
+Pillow
+imbalanced-learn
+Werkzeug==2.3.7

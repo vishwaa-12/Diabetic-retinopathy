@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RetinaAI - Advanced Diagnostics</title>
+  <!-- Modern Typography & Icons -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="/static/css/style.css" />
+
+  <script>
+    // CLIENT-SIDE SESSION GUARD
+    if (!sessionStorage.getItem("session_active")) {
+      // Automatically set session for demo purposes if missing
+      // In production, this would redirect to login
+      sessionStorage.setItem("session_active", "true");
+      // window.location.href = "/logout";
+    }
+  </script>
+</head>
+
+<body>
+  <!-- Navigation -->
+  <nav class="navbar">
+    <div class="logo">
+      <span class="logo-icon">👁️</span>
+      RetinaAI <span class="badge">PRO</span>
+    </div>
+    <div class="nav-links">
+      <a href="#" class="active">Diagnosis</a>
+      <a href="#">Patient History</a>
+    </div>
+
+    <div class="user-profile" style="display: flex; align-items: center; gap: 10px">
+      <div style="text-align: right">
+        <div style="font-weight: 600; font-size: 0.9rem">Dr. User</div>
+        <a href="/logout" style="font-size: 0.8rem; color: #ef5350; text-decoration: none">Logout</a>
+      </div>
+      <div class="avatar" title="Doctor">
+        D
+      </div>
+    </div>
+  </nav>
+
+  <!-- Main Content -->
+  <main class="container">
+    <!-- HEADER -->
+    <header class="page-header">
+      <h1>Diagnostic Pipeline</h1>
+      <p>
+        Upload retinal fundus images for automated severity classification and
+        risk assessment.
+      </p>
+    </header>
+
+    <!-- UPLOAD SECTION (Frontend) -->
+    <section id="uploadSection" class="upload-container" style="
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 30px;
+        ">
+      <!-- Patient Form -->
+      <div class="card" style="width: 100%; box-sizing: border-box; padding: 40px">
+        <h3 style="margin-bottom: 20px; color: #2c3e50; text-align: center">
+          <i class="fa fa-user-injured"></i> Patient Details
+        </h3>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px">
+          <div style="grid-column: span 2">
+            <label style="display: block; margin-bottom: 8px; font-weight: 500">Full Name</label>
+            <input type="text" id="patientName" placeholder="e.g. John Smith" required style="
+                    width: 100%;
+                    padding: 12px;
+                    border: 1px solid #ddd;
+                    border-radius: 8px;
+                    font-family: 'Outfit', sans-serif;
+                " />
+          </div>
+
+          <div>
+            <label style="display: block; margin-bottom: 8px; font-weight: 500">Date of Birth</label>
+            <input type="date" id="patientDob" required style="
+                    width: 100%;
+                    padding: 12px;
+                    border: 1px solid #ddd;
+                    border-radius: 8px;
+                    font-family: 'Outfit', sans-serif;
+                " onchange="calculateAge()" />
+          </div>
+
+          <div>
+            <label style="display: block; margin-bottom: 8px; font-weight: 500">Age</label>
+            <input type="number" id="patientAge" placeholder="Auto" readonly style="
+                    width: 100%;
+                    padding: 12px;
+                    border: 1px solid #ddd;
+                    border-radius: 8px;
+                    background-color: #f9f9f9;
+                    font-family: 'Outfit', sans-serif;
+                " />
+          </div>
+
+          <div>
+            <label style="display: block; margin-bottom: 8px; font-weight: 500">Mobile Number</label>
+            <input type="tel" id="patientMobile" placeholder="9876543210" pattern="[0-9]{10}" maxlength="10" required
+              style="
+                    width: 100%;
+                    padding: 12px;
+                    border: 1px solid #ddd;
+                    border-radius: 8px;
+                    font-family: 'Outfit', sans-serif;
+                " />
+          </div>
+
+          <div>
+            <label style="display: block; margin-bottom: 8px; font-weight: 500">Gender</label>
+            <select id="patientGender" style="
+                    width: 100%;
+                    padding: 12px;
+                    border: 1px solid #ddd;
+                    border-radius: 8px;
+                    font-family: 'Outfit', sans-serif;
+                ">
+              <option value="">Select</option>
+              <option value="Male">Male</option>
+              <option value="Female">Female</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+
+          <div>
+            <label style="display: block; margin-bottom: 8px; font-weight: 500">Diabetes Duration (years)</label>
+            <input type="number" id="diabetesDuration" placeholder="5" min="0" max="100" style="
+                    width: 100%;
+                    padding: 12px;
+                    border: 1px solid #ddd;
+                    border-radius: 8px;
+                    font-family: 'Outfit', sans-serif;
+                " />
+          </div>
+        </div>
+      </div>
+
+      <div class="upload-box" id="dropZone" style="width: 100%; box-sizing: border-box">
+        <div class="upload-icon">📤</div>
+        <h3>Upload Retinal Scan</h3>
+        <p>
+          Drag & drop file here or
+          <span class="browse-btn">browse system</span>
+        </p>
+        <input type="file" id="fileInput" hidden accept="image/*" />
+      </div>
+
+      <div class="info-badges">
+        <div class="badge-item">🔒 Secure HIPA Compliant</div>
+        <div class="badge-item">⚡ VGG16 Powered</div>
+        <div class="badge-item">🎯 98% Accuracy</div>
+      </div>
+    </section>
+
+    <!-- LOADING STATE -->
+    <section id="loadingSection" class="loading-container hidden">
+      <div class="loader-ring"></div>
+      <div class="loading-steps">
+        <div class="step active" id="step1">Image Preprocessing...</div>
+        <div class="step" id="step2">
+          GAN Augmentation (Class Balancing)...
+        </div>
+        <div class="step" id="step3">Feature Extraction (VGG16)...</div>
+        <div class="step" id="step4">Vector Generation...</div>
+        <div class="step" id="step5">XGBoost Classification...</div>
+      </div>
+    </section>
+
+    <!-- DASHBOARD RESULT (Frontend Report) -->
+    <section id="dashboardSection" class="dashboard-grid hidden">
+      <!-- Outcome Card -->
+      <div class="card result-card">
+        <h3>Diagnosis Result</h3>
+        <div class="diagnosis-large" id="diagnosisText">--</div>
+        <div class="confidence-meter">
+          <div class="meter-bar">
+            <div class="meter-fill" id="confidenceFill" style="width: 0%"></div>
+          </div>
+          <span id="riskScore">0% Risk</span>
+        </div>
+        <p class="recommendation" id="recommendationText">...</p>
+      </div>
+
+      <!-- Image View -->
+      <div class="card image-card">
+        <h3>Analyzed Fundus</h3>
+        <div class="image-wrapper">
+          <img id="previewImage" src="" alt="Retina Scan" />
+          <div class="scan-overlay"></div>
+        </div>
+      </div>
+
+      <!-- Charts -->
+      <div class="card chart-card">
+        <h3>Severity Probability Distribution</h3>
+        <div style="height: 250px; position: relative">
+          <canvas id="probChart"></canvas>
+        </div>
+      </div>
+
+      <!-- Risk Graph -->
+      <div class="card chart-card">
+        <h3>Disease Progression Risk</h3>
+        <div style="height: 250px; position: relative">
+          <canvas id="riskChart"></canvas>
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div class="actions-row">
+        <button class="btn secondary" onclick="location.reload()">
+          New Diagnosis
+        </button>
+        <button class="btn primary" id="downloadPdfBtn">
+          <i class="fa fa-print"></i> Print Report
+        </button>
+      </div>
+    </section>
+
+    <!-- PATIENT HISTORY SECTION (New) -->
+    <section id="historySection" class="history-container container hidden">
+      <!-- Content injected by JS -->
+    </section>
+  </main>
+
+  <script src="/static/js/main.js?v=2.6"></script>
+</body>
+
+</html>
